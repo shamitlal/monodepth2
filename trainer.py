@@ -8,7 +8,8 @@ from __future__ import absolute_import, division, print_function
 
 import numpy as np
 import time
-
+import ipdb 
+st = ipdb.set_trace
 import torch
 import torch.nn.functional as F
 import torch.optim as optim
@@ -118,12 +119,12 @@ class Trainer:
         fpath = os.path.join(os.path.dirname(__file__), "splits", self.opt.split, "{}_files.txt")
 
         train_filenames = readlines(fpath.format("train"))
+        # st()
         val_filenames = readlines(fpath.format("val"))
         img_ext = '.png' if self.opt.png else '.jpg'
 
         num_train_samples = len(train_filenames)
         self.num_total_steps = num_train_samples // self.opt.batch_size * self.opt.num_epochs
-
         train_dataset = self.dataset(
             self.opt.data_path, train_filenames, self.opt.height, self.opt.width,
             self.opt.frame_ids, 4, is_train=True, img_ext=img_ext)
@@ -199,6 +200,7 @@ class Trainer:
         self.set_train()
 
         for batch_idx, inputs in enumerate(self.train_loader):
+            st()
 
             before_op_time = time.time()
 
