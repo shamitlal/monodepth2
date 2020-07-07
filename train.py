@@ -12,6 +12,7 @@ from options import MonodepthOptions
 options = MonodepthOptions()
 opts = options.parse()
 
+# python train.py --model_name mono_model --png --data_path /projects/katefgroup/datasets/shamit_carla_correct/npys --dataset carla
 
 if __name__ == "__main__":
     trainer = Trainer(opts)

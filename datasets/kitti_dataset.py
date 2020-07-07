@@ -11,9 +11,12 @@ import skimage.transform
 import numpy as np
 import PIL.Image as pil
 
+import torch
 from kitti_utils import generate_depth_map
-from .mono_dataset import MonoDataset
-
+from pydisco_utils import create_depth_image
+from .mono_dataset import MonoDataset, PyDiscoDataset
+import ipdb 
+st = ipdb.set_trace
 
 class KITTIDataset(MonoDataset):
     """Superclass for different types of KITTI dataset loaders
@@ -128,3 +131,38 @@ class KITTIDepthDataset(KITTIDataset):
             depth_gt = np.fliplr(depth_gt)
 
         return depth_gt
+
+class CarlaDataset(PyDiscoDataset):
+    """Carla dataset 
+    """
+    def __init__(self, *args, **kwargs):
+        super(CarlaDataset, self).__init__(*args, **kwargs)
+    
+    def get_color(self, d, video_num, video_frame, frame_offset, stereo_rl, do_flip):
+        color = self.loader(d, video_num, video_frame, frame_offset, stereo_rl, self.opt)
+
+        if do_flip:
+            color = color.transpose(pil.FLIP_LEFT_RIGHT)
+
+        return color
+    
+    def get_depth(self, d, video_num, video_frame, frame_offset, stereo_rl, do_flip, K_orig):
+
+        frame_num = self.opt.video_len*2*video_num
+        frame_num += video_frame*2
+        frame_num += stereo_rl
+        frame_num  += 2*frame_offset
+        xyz_camXs = torch.tensor(d['xyz_camXs_raw'][frame_num]).unsqueeze(0).float()
+        K = torch.tensor(K_orig).float()
+
+        depth_gt, _ = create_depth_image(K, xyz_camXs, self.opt.height, self.opt.width)
+        depth_gt = depth_gt[0][0].numpy()
+        # print("depth shape is : ", depth_gt.shape)
+        
+        if do_flip:
+            depth_gt = np.fliplr(depth_gt)
+
+        return depth_gt
+    
+    def check_depth(self):
+        return True

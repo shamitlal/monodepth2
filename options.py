@@ -15,6 +15,22 @@ file_dir = os.path.dirname(__file__)  # the directory that options.py resides in
 class MonodepthOptions:
     def __init__(self):
         self.parser = argparse.ArgumentParser(description="Monodepthv2 options")
+        
+        # Pytorch Disco options
+        self.parser.add_argument("--data_mod",
+                                 type=str,
+                                 default="multivehicle_depth_C{}.txt",
+                                 help="which data mod to use")
+        
+        self.parser.add_argument("--video_len",
+                                 type=int,
+                                 default=10,
+                                 help="number of frames in each video")
+        
+        self.parser.add_argument("--num_videos",
+                                 type=int,
+                                 default=2,
+                                 help="Number of videos")
 
         # PATHS
         self.parser.add_argument("--data_path",
@@ -45,7 +61,7 @@ class MonodepthOptions:
                                  type=str,
                                  help="dataset to train on",
                                  default="kitti",
-                                 choices=["kitti", "kitti_odom", "kitti_depth", "kitti_test"])
+                                 choices=["kitti", "kitti_odom", "kitti_depth", "kitti_test", "carla"])
         self.parser.add_argument("--png",
                                  help="if set, trains from raw KITTI png files (instead of jpgs)",
                                  action="store_true")
@@ -73,7 +89,7 @@ class MonodepthOptions:
         self.parser.add_argument("--max_depth",
                                  type=float,
                                  help="maximum depth",
-                                 default=50.0)
+                                 default=100.0)
         self.parser.add_argument("--use_stereo",
                                  help="if set, uses stereo pair for training",
                                  action="store_true")
@@ -95,7 +111,7 @@ class MonodepthOptions:
         self.parser.add_argument("--num_epochs",
                                  type=int,
                                  help="number of epochs",
-                                 default=20)
+                                 default=200)
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
@@ -185,6 +201,7 @@ class MonodepthOptions:
                                  choices=[
                                     "eigen", "eigen_benchmark", "benchmark", "odom_9", "odom_10"],
                                  help="which split to run eval on")
+        
         self.parser.add_argument("--save_pred_disps",
                                  help="if set saves predicted disparities",
                                  action="store_true")
