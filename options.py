@@ -107,7 +107,7 @@ class MonodepthOptions:
         self.parser.add_argument("--batch_size",
                                  type=int,
                                  help="batch size",
-                                 default=12)
+                                 default=16)
         self.parser.add_argument("--learning_rate",
                                  type=float,
                                  help="learning rate",
@@ -119,7 +119,7 @@ class MonodepthOptions:
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
-                                 default=500)
+                                 default=1200)
 
         # ABLATION options
         self.parser.add_argument("--v1_multiscale",
@@ -176,7 +176,7 @@ class MonodepthOptions:
         self.parser.add_argument("--log_frequency",
                                  type=int,
                                  help="number of batches between each tensorboard log",
-                                 default=250)
+                                 default=125)
         self.parser.add_argument("--save_frequency",
                                  type=int,
                                  help="number of epochs between each save",

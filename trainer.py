@@ -241,13 +241,15 @@ class Trainer:
             # # late_phase = self.step % 2000 == 0
             # late_phase = batch_idx % self.opt.log_frequency == 0 and self.step < 2000
             
-            if self.iteration % self.opt.log_frequency == 0:
-                self.log_time(batch_idx, duration, losses["loss"].cpu().data)
+            # if self.iteration % self.opt.log_frequency == 0:
+            self.log_time(batch_idx, duration, losses["loss"].cpu().data)
 
-                if "depth_gt" in inputs:
-                    self.compute_depth_losses(inputs, outputs, losses)
-
-                self.log("train", inputs, outputs, losses)
+            if "depth_gt" in inputs:
+                self.compute_depth_losses(inputs, outputs, losses)
+            
+            should_log_images = self.iteration % self.opt.log_frequency == 0
+            self.log("train", inputs, outputs, losses, should_log_images)
+            if should_log_images:
                 self.val()
             
             self.iteration += 1
@@ -567,51 +569,52 @@ class Trainer:
         print(print_string.format(self.epoch, batch_idx, samples_per_sec, loss,
                                   sec_to_hm_str(time_sofar), sec_to_hm_str(training_time_left)))
 
-    def log(self, mode, inputs, outputs, losses):
+    def log(self, mode, inputs, outputs, losses, should_log_images=True):
         """Write an event to the tensorboard events file
         """
         writer = self.writers[mode]
         for l, v in losses.items():
             writer.add_scalar("{}".format(l), v, self.step)
 
-        for j in range(min(4, self.opt.batch_size)):  # write a maxmimum of four images
-            for s in self.opt.scales:
-                for frame_id in self.opt.frame_ids:
-                    writer.add_image(
-                        "color_{}_{}/{}".format(frame_id, s, j),
-                        inputs[("color", frame_id, s)][j].data, self.step)
-                    if s == 0 and frame_id != 0:
+        if should_log_images:
+            for j in range(min(4, self.opt.batch_size)):  # write a maxmimum of four images
+                for s in self.opt.scales:
+                    for frame_id in self.opt.frame_ids:
                         writer.add_image(
-                            "color_pred_{}_{}/{}".format(frame_id, s, j),
-                            outputs[("color", frame_id, s)][j].data, self.step)
+                            "color_{}_{}/{}".format(frame_id, s, j),
+                            inputs[("color", frame_id, s)][j].data, self.step)
+                        if s == 0 and frame_id != 0:
+                            writer.add_image(
+                                "color_pred_{}_{}/{}".format(frame_id, s, j),
+                                outputs[("color", frame_id, s)][j].data, self.step)
 
-                writer.add_image(
-                    "disp_{}/{}".format(s, j),
-                    normalize_image(outputs[("disp", s)][j]), self.step)
-                
-                disp_pred = outputs[("disp", s)][j]
-                disp_resized_np = disp_pred.squeeze().detach().cpu().numpy()
-                vmax = np.percentile(disp_resized_np, 95)
-                normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
-                mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
-                colormapped_im = (mapper.to_rgba(disp_resized_np)[:, :, :3] * 255).astype(np.uint8)
-                colormapped_im = normalize_image(torch.tensor(colormapped_im).permute(2,0,1))
-
-                writer.add_image(
-                    "disp_colored_{}/{}".format(s, j),
-                    colormapped_im, self.step)
-
-                if self.opt.predictive_mask:
-                    for f_idx, frame_id in enumerate(self.opt.frame_ids[1:]):
-                        writer.add_image(
-                            "predictive_mask_{}_{}/{}".format(frame_id, s, j),
-                            outputs["predictive_mask"][("disp", s)][j, f_idx][None, ...],
-                            self.step)
-
-                elif not self.opt.disable_automasking:
                     writer.add_image(
-                        "automask_{}/{}".format(s, j),
-                        outputs["identity_selection/{}".format(s)][j][None, ...], self.step)
+                        "disp_{}/{}".format(s, j),
+                        normalize_image(outputs[("disp", s)][j]), self.step)
+                    
+                    disp_pred = outputs[("disp", s)][j]
+                    disp_resized_np = disp_pred.squeeze().detach().cpu().numpy()
+                    vmax = np.percentile(disp_resized_np, 95)
+                    normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
+                    mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
+                    colormapped_im = (mapper.to_rgba(disp_resized_np)[:, :, :3] * 255).astype(np.uint8)
+                    colormapped_im = normalize_image(torch.tensor(colormapped_im).permute(2,0,1))
+
+                    writer.add_image(
+                        "disp_colored_{}/{}".format(s, j),
+                        colormapped_im, self.step)
+
+                    if self.opt.predictive_mask:
+                        for f_idx, frame_id in enumerate(self.opt.frame_ids[1:]):
+                            writer.add_image(
+                                "predictive_mask_{}_{}/{}".format(frame_id, s, j),
+                                outputs["predictive_mask"][("disp", s)][j, f_idx][None, ...],
+                                self.step)
+
+                    elif not self.opt.disable_automasking:
+                        writer.add_image(
+                            "automask_{}/{}".format(s, j),
+                            outputs["identity_selection/{}".format(s)][j][None, ...], self.step)
 
     def save_opts(self):
         """Save options to disk so we know what we ran this experiment with
