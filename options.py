@@ -43,6 +43,10 @@ class MonodepthOptions:
                                  default=os.path.join(os.path.expanduser("~"), "tmp"))
 
         # TRAINING options
+        self.parser.add_argument("--run_name",
+                                 type=str,
+                                 help="Run name of the experiment",
+                                 default="run1")
         self.parser.add_argument("--model_name",
                                  type=str,
                                  help="the name of the folder to save the model in",
@@ -111,11 +115,11 @@ class MonodepthOptions:
         self.parser.add_argument("--num_epochs",
                                  type=int,
                                  help="number of epochs",
-                                 default=200)
+                                 default=2000000000000000)
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
-                                 default=15)
+                                 default=500)
 
         # ABLATION options
         self.parser.add_argument("--v1_multiscale",
@@ -176,7 +180,7 @@ class MonodepthOptions:
         self.parser.add_argument("--save_frequency",
                                  type=int,
                                  help="number of epochs between each save",
-                                 default=1)
+                                 default=50)
 
         # EVALUATION options
         self.parser.add_argument("--eval_stereo",

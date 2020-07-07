@@ -163,7 +163,7 @@ class Trainer:
 
         self.writers = {}
         for mode in ["train", "val"]:
-            self.writers[mode] = SummaryWriter(os.path.join(self.log_path, mode))
+            self.writers[mode] = SummaryWriter(os.path.join(self.log_path, self.opt.run_name, mode))
 
         if not self.opt.no_ssim:
             self.ssim = SSIM()
@@ -611,7 +611,7 @@ class Trainer:
     def save_model(self):
         """Save model weights to disk
         """
-        save_folder = os.path.join(self.log_path, "models", "weights_{}".format(self.epoch))
+        save_folder = os.path.join(self.log_path, "models", "weights_{}_{}".format(self.epoch, self.opt.run_name))
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
 
