@@ -281,7 +281,13 @@ class Trainer:
         if self.opt.predictive_mask:
             outputs["predictive_mask"] = self.models["predictive_mask"](features)
 
-        if self.use_pose_net:
+        if self.opt.use_gt_pose:
+            for f_i in self.opt.frame_ids[1:]:
+                # st()
+                if f_i != "s":
+                    outputs[("cam_T_cam", 0, f_i)] = inputs[("cam_T_cam", 0, f_i)].float()
+
+        elif self.use_pose_net:
             outputs.update(self.predict_poses(inputs, features))
 
         self.generate_images_pred(inputs, outputs)

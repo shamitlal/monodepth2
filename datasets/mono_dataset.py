@@ -12,7 +12,7 @@ import numpy as np
 import copy
 from PIL import Image  # using pillow-simd for increased speed
 
-from pydisco_utils import scale_intrinsics
+from pydisco_utils import scale_intrinsics, safe_inverse
 import torch
 import torch.utils.data as data
 from torchvision import transforms
@@ -281,7 +281,20 @@ class PyDiscoDataset(MonoDataset):
         for i in self.frame_idxs:
             inputs[("color", i, -1)] = self.get_color(d, video_num, video_frame, i, stereo_rl, do_flip)
 
-        # st()
+        for i in self.frame_idxs:
+            frame_num = self.opt.video_len*2*video_num
+            frame_num += video_frame*2
+            frame_num += stereo_rl
+            frame_num  += 2*i
+            if i==0:
+                origin_T_camSource = torch.tensor(d['origin_T_camXs_raw'][frame_num]).unsqueeze(0)
+            else:
+                origin_T_camTarget = torch.tensor(d['origin_T_camXs_raw'][frame_num]).unsqueeze(0)
+                camTarget_T_camSource = safe_inverse(origin_T_camTarget) @ origin_T_camSource
+                camTarget_T_camSource = camTarget_T_camSource.squeeze(0)
+                inputs[('cam_T_cam', 0, i)] = camTarget_T_camSource
+
+
         # adjusting intrinsics to match each scale in the pyramid
         for scale in range(self.num_scales):
             K = torch.tensor(K_orig.copy())
@@ -308,7 +321,7 @@ class PyDiscoDataset(MonoDataset):
             del inputs[("color_aug", i, -1)]
 
         if self.load_depth:
-            depth_gt = self.get_depth(d, video_num, video_frame, i, stereo_rl, do_flip, K_orig)
+            depth_gt = self.get_depth(d, video_num, video_frame, 0, stereo_rl, do_flip, K_orig)
             inputs["depth_gt"] = np.expand_dims(depth_gt, 0)
             inputs["depth_gt"] = torch.from_numpy(inputs["depth_gt"].astype(np.float32))
 

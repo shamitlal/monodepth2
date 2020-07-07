@@ -13,7 +13,16 @@ import pickle
 from matplotlib import cm
 device = "cpu"
 import open3d as o3d
+def safe_inverse(a): #parallel version
+    B, _, _ = list(a.shape)
+    inv = a.clone()
+    r_transpose = a[:, :3, :3].transpose(1,2) #inverse of rotation matrix
 
+    inv[:, :3, :3] = r_transpose
+    inv[:, :3, 3:4] = -torch.matmul(r_transpose, a[:, :3, 3:4])
+
+    return inv
+    
 def make_pcd(pts):
     pcd = o3d.geometry.PointCloud()
     pcd.points = o3d.utility.Vector3dVector(pts[:, :3])

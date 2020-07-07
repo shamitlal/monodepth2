@@ -31,6 +31,10 @@ class MonodepthOptions:
                                  type=int,
                                  default=2,
                                  help="Number of videos")
+        
+        self.parser.add_argument("--use_gt_pose",
+                                 help="use ground truth pose",
+                                 action="store_true")
 
         # PATHS
         self.parser.add_argument("--data_path",
@@ -119,7 +123,7 @@ class MonodepthOptions:
         self.parser.add_argument("--scheduler_step_size",
                                  type=int,
                                  help="step size of the scheduler",
-                                 default=1200)
+                                 default=5000)
 
         # ABLATION options
         self.parser.add_argument("--v1_multiscale",
