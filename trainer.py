@@ -25,7 +25,8 @@ from layers import *
 import datasets
 import networks
 from IPython import embed
-
+import matplotlib as mpl
+import matplotlib.cm as cm
 
 class Trainer:
     def __init__(self, options):
@@ -206,6 +207,7 @@ class Trainer:
         """Run the entire training pipeline
         """
         self.epoch = 0
+        self.iteration = 0
         self.step = 0
         self.start_time = time.time()
         for self.epoch in range(self.opt.num_epochs):
@@ -220,10 +222,10 @@ class Trainer:
 
         print("Training")
         self.set_train()
-
+        print("Len trainloader: ", len(self.train_loader))
         for batch_idx, inputs in enumerate(self.train_loader):
             # st()
-
+            print("Batch idx: ", batch_idx)
             before_op_time = time.time()
 
             outputs, losses = self.process_batch(inputs)
@@ -234,11 +236,12 @@ class Trainer:
 
             duration = time.time() - before_op_time
 
-            # log less frequently after the first 2000 steps to save time & disk space
-            early_phase = batch_idx % self.opt.log_frequency == 0 and self.step < 2000
-            late_phase = self.step % 2000 == 0
-
-            if early_phase or late_phase:
+            # # log less frequently after the first 2000 steps to save time & disk space
+            # early_phase = batch_idx % self.opt.log_frequency == 0 and self.step < 2000
+            # # late_phase = self.step % 2000 == 0
+            # late_phase = batch_idx % self.opt.log_frequency == 0 and self.step < 2000
+            
+            if self.iteration % self.opt.log_frequency == 0:
                 self.log_time(batch_idx, duration, losses["loss"].cpu().data)
 
                 if "depth_gt" in inputs:
@@ -246,7 +249,8 @@ class Trainer:
 
                 self.log("train", inputs, outputs, losses)
                 self.val()
-
+            
+            self.iteration += 1
             self.step += 1
 
     def process_batch(self, inputs):
@@ -584,6 +588,18 @@ class Trainer:
                 writer.add_image(
                     "disp_{}/{}".format(s, j),
                     normalize_image(outputs[("disp", s)][j]), self.step)
+                
+                disp_pred = outputs[("disp", s)][j]
+                disp_resized_np = disp_pred.squeeze().detach().cpu().numpy()
+                vmax = np.percentile(disp_resized_np, 95)
+                normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
+                mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
+                colormapped_im = (mapper.to_rgba(disp_resized_np)[:, :, :3] * 255).astype(np.uint8)
+                colormapped_im = normalize_image(torch.tensor(colormapped_im).permute(2,0,1))
+
+                writer.add_image(
+                    "disp_colored_{}/{}".format(s, j),
+                    colormapped_im, self.step)
 
                 if self.opt.predictive_mask:
                     for f_idx, frame_id in enumerate(self.opt.frame_ids[1:]):
